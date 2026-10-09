@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control de Priorización IA · Municipalidad de Lima</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="body-admin">
+
+  <!-- Barra de Navegación del Panel de Control Municipal -->
+  <header class="navbar navbar-admin">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-icon">⚙️</div>
+        <div>
+          <h1 class="brand-title">IA Municipal · Panel de Cuadrillas</h1>
+          <span class="brand-subtitle">Priorización Inteligente de Incidencias (EST315)</span>
+        </div>
+      </div>
+      <div class="nav-meta">
+        <span class="badge-user-admin">👤 {{ usuario_admin }}</span>
+        <a href="{{ url_for('portal_ciudadano') }}" class="btn btn-outline btn-sm" title="Ver la vista que tienen los vecinos">
+          <span>🌐</span> Ver Portal Ciudadano
+        </a>
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" title="Salir de la sesión de administrador">
+          <span>🚪</span> Salir
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Notificaciones Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-alert flash-{{ category }}">
+              <span class="flash-icon">🔔</span>
+              <span>{{ message }}</span>
+              <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Encabezado de Sección y Acciones Rápidas -->
+    <div class="dashboard-header">
+      <div>
+        <h2 class="section-title">Consola de Despacho y Priorización Operativa</h2>
+        <p class="section-desc">
+          Matriz multicriterio automatizada: <strong>Gravedad (35%)</strong>, <strong>Población (30%)</strong>, 
+          <strong>Tiempo (20%)</strong> y <strong>Recursos (15%)</strong> con reglas de negocio RN-01 a RN-08.
+        </p>
+      </div>
+      <div class="header-actions">
+        <a href="{{ url_for('exportar_pdf') }}" class="btn btn-outline" target="_blank" title="Descargar informe oficial para cuadrillas en PDF">
+          <span>📄</span> Exportar a PDF
+        </a>
+        <a href="{{ url_for('registro') }}" class="btn btn-primary" title="Registrar un nuevo reporte interno o vecinal">
+          <span>➕</span> Registrar Nuevo Reporte
+        </a>
+      </div>
+    </div>
+
+    <!-- Tarjetas de Indicadores Métricos (KPIs) -->
+    <section class="kpi-grid">
+      <div class="kpi-card kpi-total">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Reportes</span>
+          <span class="kpi-icon">📋</span>
+        </div>
+        <div class="kpi-value">{{ total }}</div>
+        <div class="kpi-footer">39 registros base encuesta</div>
+      </div>
+
+      <div class="kpi-card kpi-critica" data-filter-quick="Crítica">
+        <div class="kpi-header">
+          <span class="kpi-title">Prioridad Crítica</span>
+          <span class="kpi-icon">🚨</span>
+        </div>
+        <div class="kpi-value">{{ criticos }}</div>
+        <div class="kpi-footer">Puntaje ≥ 80 pts</div>
+      </div>
+
+      <div class="kpi-card kpi-alta" data-filter-quick="Alta">
+        <div class="kpi-header">
+          <span class="kpi-title">Prioridad Alta</span>
+          <span class="kpi-icon">⚠️</span>
+        </div>
+        <div class="kpi-value">{{ altos }}</div>
+        <div class="kpi-footer">Puntaje 65 - 79.9 pts</div>
+      </div>
+
+      <div class="kpi-card kpi-media" data-filter-quick="Media">
+        <div class="kpi-header">
+          <span class="kpi-title">Prioridad Media</span>
+          <span class="kpi-icon">⏳</span>
+        </div>
+        <div class="kpi-value">{{ medios }}</div>
+        <div class="kpi-footer">Puntaje 45 - 64.9 pts</div>
+      </div>
+
+      <div class="kpi-card kpi-baja" data-filter-quick="Baja">
+        <div class="kpi-header">
+          <span class="kpi-title">Baja / Resueltos</span>
+          <span class="kpi-icon">✅</span>
+        </div>
+        <div class="kpi-value">{{ bajos }}</div>
+        <div class="kpi-footer">{{ resueltos }} casos resueltos (RN-08)</div>
+      </div>
+    </section>
+
+    <!-- Gráficos Estadísticos con Chart.js -->
+    <section class="charts-section">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">📊 Incidencias por Categoría</h3>
+          <span class="chart-badge">Encuesta 39 Ciudadanos</span>
+        </div>
+        <div class="chart-body">
+          <canvas id="graficoCategorias"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">🎯 Segmentación Semáforo por Prioridad IA</h3>
+          <span class="chart-badge">RN-07 Rangos Oficiales</span>
+        </div>
+        <div class="chart-body">
+          <canvas id="graficoPrioridades"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra de Filtros Interactivos y Búsqueda -->
+    <section class="filters-card">
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label for="filtroCategoria" class="filter-label">Filtrar por Categoría:</label>
+          <select id="filtroCategoria" class="filter-select">
+            <option value="">Todas las categorías</option>
+            {% for cat in categorias_unicas %}
+              <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="filtroDistrito" class="filter-label">Filtrar por Distrito:</label>
+          <select id="filtroDistrito" class="filter-select">
+            <option value="">Todos los distritos</option>
+            {% for dist in distritos_unicos %}
+              <option value="{{ dist }}">{{ dist }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="filtroPrioridad" class="filter-label">Nivel de Prioridad:</label>
+          <select id="filtroPrioridad" class="filter-select">
+            <option value="">Todos los niveles</option>
+            <option value="Crítica">🚨 Crítica</option>
+            <option value="Alta">⚠️ Alta</option>
+            <option value="Media">⏳ Media</option>
+            <option value="Baja">✅ Baja</option>
+          </select>
+        </div>
+
+        <div class="filter-item search-item">
+          <label for="filtroBusqueda" class="filter-label">Búsqueda Rápida:</label>
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="filtroBusqueda" class="filter-input" placeholder="Buscar por descripción, calle, zona...">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-status">
+        Mostrando <strong id="contadorFilas">{{ ranking|length }}</strong> de <strong>{{ total }}</strong> reportes evaluados.
+        <button id="btnLimpiarFiltros" class="btn-link" style="display: none;">Restablecer filtros</button>
+      </div>
+    </section>
+
+    <!-- Tabla Principal del Ranking IA con Control Operativo de Estado -->
+    <section class="table-card">
+      <div class="table-responsive">
+        <table class="ranking-table" id="tablaRanking">
+          <thead>
+            <tr>
+              <th title="Posición en la cola de prioridad">#</th>
+              <th>ID</th>
+              <th>Categoría</th>
+              <th>Distrito</th>
+              <th>Zona</th>
+              <th title="Gravedad (1 a 5)">Gravedad</th>
+              <th title="Población afectada directa">Población</th>
+              <th title="Días acumulados sin resolver">Tiempo</th>
+              <th title="Puntaje final de 0 a 100">Puntaje IA</th>
+              <th>Clasificación</th>
+              <th>Gestión de Estado (RN-08)</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rep in ranking %}
+              <tr class="ranking-row"
+                  data-categoria="{{ rep.categoria }}"
+                  data-distrito="{{ rep.distrito }}"
+                  data-prioridad="{{ rep.clasificacion }}"
+                  data-estado="{{ rep.estado }}">
+                <td class="col-rank">
+                  {% if rep.estado == 'Resuelto' %}
+                    <span class="rank-resuelto" title="Atendido por cuadrilla">✓</span>
+                  {% else %}
+                    <span class="rank-numero {% if rep.ranking_posicion <= 3 %}rank-top{% endif %}">{{ rep.ranking_posicion }}</span>
+                  {% endif %}
+                </td>
+                <td class="col-id"><strong>#{{ rep.id }}</strong></td>
+                <td>
+                  <span class="badge-categoria cat-{{ rep.categoria|lower|replace(' ', '-') }}">
+                    {% if rep.categoria == 'Basura' %}🗑️
+                    {% elif rep.categoria == 'Baches' %}🚧
+                    {% elif rep.categoria == 'Fugas de Agua' %}💧
+                    {% elif rep.categoria == 'Alumbrado' %}💡
+                    {% elif rep.categoria == 'Inundaciones' %}🌊
+                    {% else %}📌{% endif %}
+                    {{ rep.categoria }}
+                  </span>
+                </td>
+                <td class="font-medium">{{ rep.distrito }}</td>
+                <td><span class="badge-zona">{{ rep.zona }}</span></td>
+                <td>
+                  <span class="grav-stars" title="Nivel {{ rep.gravedad }}/5">
+                    {% for i in range(rep.gravedad) %}★{% endfor %}
+                    <span class="star-num">({{ rep.gravedad }})</span>
+                  </span>
+                </td>
+                <td>{{ "{:,}".format(rep.poblacion_afectada) }} hab.</td>
+                <td>
+                  <span class="{% if rep.tiempo_sin_resolver > 30 %}tiempo-alerta{% endif %}">
+                    {{ rep.tiempo_sin_resolver }} d.
+                  </span>
+                </td>
+                <td class="col-score">
+                  <div class="score-container">
+                    <span class="score-val">{{ rep.puntaje }}</span>
+                    <div class="score-bar-bg">
+                      <div class="score-bar-fill fill-{{ rep.clasificacion|lower }}" style="width: {{ rep.puntaje }}%;"></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-semaforo semaforo-{{ rep.clasificacion|lower }}">
+                    {{ rep.clasificacion }}
+                  </span>
+                </td>
+                <td>
+                  <!-- Selector Rápido para Cambiar Estado en Vivo -->
+                  <form action="{{ url_for('cambiar_estado', id=rep.id) }}" method="POST" class="form-cambio-estado">
+                    <select name="nuevo_estado" class="select-estado-rapido estado-select-{{ rep.estado|lower|replace(' ', '-') }}" onchange="this.form.submit()" title="Cambiar estado para re-evaluar con IA">
+                      <option value="Pendiente" {% if rep.estado == 'Pendiente' %}selected{% endif %}>🟡 Pendiente</option>
+                      <option value="En atención" {% if rep.estado == 'En atención' %}selected{% endif %}>🔵 En atención</option>
+                      <option value="Resuelto" {% if rep.estado == 'Resuelto' %}selected{% endif %}>🟢 Resuelto</option>
+                    </select>
+                  </form>
+                </td>
+                <td class="text-center">
+                  <a href="{{ url_for('detalle', id=rep.id) }}" class="btn-detalle" title="Ver análisis detallado y explicación del motor IA">
+                    Detalle →
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h4>{{ cliente }}</h4>
+        <p>Prototipo Académico Funcional · EST315</p>
+        <p class="footer-text">Priorización automatizada mediante algoritmos de IA multicriterio y reglas de negocio municipales.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Equipo del Proyecto</h4>
+        <ul class="team-list">
+          <li><strong>PM:</strong> {{ equipo.pm }}</li>
+          <li><strong>Análisis de Datos:</strong> {{ equipo.datos }}</li>
+          <li><strong>Arquitectura IA:</strong> {{ equipo.ia }}</li>
+          <li><strong>Comunicaciones:</strong> {{ equipo.comunicaciones }}</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Reglas de Negocio Activas</h4>
+        <p class="rules-summary">RN-01 (Concentración Zonal) · RN-02 (Duplicados) · RN-03 (Antigüedad) · RN-04 (Recursos) · RN-05 (Riesgo Extremo) · RN-06 (Límites) · RN-07 (Clasificación) · RN-08 (Resueltos)</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; {{ anio_actual }} {{ cliente }} · Todos los derechos reservados · Prototipo para evaluación académica.</p>
+    </div>
+  </footer>
+
+  <!-- Script con datos inyectados para Chart.js -->
+  <script>
+    window.DATOS_CATEGORIAS = {{ categorias_conteo|tojson }};
+    window.DATOS_PRIORIDADES = {
+      "Crítica": {{ criticos }},
+      "Alta": {{ altos }},
+      "Media": {{ medios }},
+      "Baja": {{ bajos }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal del Ciudadano · Atención de Incidencias Vecinales</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="body-ciudadano">
+
+  <!-- Barra de Navegación del Portal Ciudadano -->
+  <header class="navbar navbar-ciudadano">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <a href="{{ url_for('portal_ciudadano') }}" class="nav-brand-link">
+          <div class="brand-icon">🏛️</div>
+          <div>
+            <h1 class="brand-title">{{ cliente }}</h1>
+            <span class="brand-subtitle">Portal de Participación Vecinal y Reportes</span>
+          </div>
+        </a>
+      </div>
+      <div class="nav-meta">
+        <span class="badge-academico">{{ curso }}</span>
+        {% if es_admin %}
+          <a href="{{ url_for('panel_admin') }}" class="btn btn-primary btn-sm">
+            <span>⚙️</span> Ir al Panel de IA (Admin)
+          </a>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Cerrar Sesión</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm" title="Acceso exclusivo para el equipo municipal y evaluadores">
+            <span>🔐</span> Acceso Funcionarios / Admin
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Notificaciones Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-alert flash-{{ category }}">
+              <span class="flash-icon">🔔</span>
+              <span>{{ message }}</span>
+              <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Hero Banner Ciudadano -->
+    <section class="citizen-hero">
+      <div class="citizen-hero-content">
+        <span class="citizen-hero-tag">👥 Atención al Vecino 24/7</span>
+        <h2 class="citizen-hero-title">Reporta y monitorea incidencias en tu comunidad</h2>
+        <p class="citizen-hero-desc">
+          Baches, acumulación de basura, fugas de agua, postes sin luz o aniegos. 
+          Cada reporte es analizado por nuestro <strong>Motor de Inteligencia Artificial</strong> 
+          para despachar las cuadrillas municipales según urgencia y población afectada.
+        </p>
+        
+        <div class="citizen-hero-actions">
+          <a href="{{ url_for('registro') }}" class="btn btn-primary btn-lg">
+            <span>📢</span> Reportar un Problema en mi Barrio
+          </a>
+          <a href="#seccionConsulta" class="btn btn-outline btn-lg">
+            <span>🔎</span> Consultar mi Ticket
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Indicadores Cívicos Rápidos -->
+    <section class="kpi-grid">
+      <div class="kpi-card kpi-total">
+        <div class="kpi-header">
+          <span class="kpi-title">Reportes Registrados</span>
+          <span class="kpi-icon">📋</span>
+        </div>
+        <div class="kpi-value">{{ total }}</div>
+        <div class="kpi-footer">Reclamos ciudadanos recibidos</div>
+      </div>
+
+      <div class="kpi-card kpi-alta">
+        <div class="kpi-header">
+          <span class="kpi-title">En Atención Operativa</span>
+          <span class="kpi-icon">👷</span>
+        </div>
+        <div class="kpi-value">{{ en_atencion }}</div>
+        <div class="kpi-footer">Cuadrillas trabajando en campo</div>
+      </div>
+
+      <div class="kpi-card kpi-baja">
+        <div class="kpi-header">
+          <span class="kpi-title">Casos Resueltos</span>
+          <span class="kpi-icon">✅</span>
+        </div>
+        <div class="kpi-value">{{ resueltos }}</div>
+        <div class="kpi-footer">Problemas solucionados por la gestión</div>
+      </div>
+
+      <div class="kpi-card kpi-media">
+        <div class="kpi-header">
+          <span class="kpi-title">En Evaluación IA</span>
+          <span class="kpi-icon">⏳</span>
+        </div>
+        <div class="kpi-value">{{ pendientes }}</div>
+        <div class="kpi-footer">En cola de priorización algorítmica</div>
+      </div>
+    </section>
+
+    <!-- Caja de Consulta Rápida de Ticket -->
+    <section class="card citizen-search-card" id="seccionConsulta">
+      <div class="citizen-search-inner">
+        <div>
+          <h3 class="search-title">🔎 Rastrear el Estado de mi Reporte</h3>
+          <p class="search-desc">Ingrese el número de su ticket para verificar el avance y diagnóstico de la cuadrilla municipal.</p>
+        </div>
+        <div class="search-form-group">
+          <input type="number" id="inputBuscarTicket" class="filter-input search-ticket-input" placeholder="Ejemplo: 12" min="1">
+          <button type="button" class="btn btn-primary" onclick="consultarTicket()">Consultar Avance</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabla Pública de Incidencias Comunitarias -->
+    <section class="table-card">
+      <div class="table-header-bar">
+        <div>
+          <h3 class="table-section-title">Incidencias Ciudadanas Recientes</h3>
+          <p class="text-muted" style="font-size: 0.85rem;">Listado público para transparencia vecinal en los distritos de intervención.</p>
+        </div>
+        <div class="citizen-table-search">
+          <input type="text" id="filtroTextoCiudadano" class="filter-input" placeholder="Buscar por calle, distrito...">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="ranking-table" id="tablaCiudadana">
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Fecha</th>
+              <th>Categoría</th>
+              <th>Distrito</th>
+              <th>Zona</th>
+              <th>Descripción Pública</th>
+              <th>Estado de Atención</th>
+              <th class="text-center">Seguimiento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rep in reportes %}
+              <tr class="ranking-row">
+                <td class="col-id"><strong>#{{ rep.id }}</strong></td>
+                <td style="white-space: nowrap; font-size: 0.82rem; color: #64748b;">{{ rep.fecha_reporte }}</td>
+                <td>
+                  <span class="badge-categoria cat-{{ rep.categoria|lower|replace(' ', '-') }}">
+                    {% if rep.categoria == 'Basura' %}🗑️
+                    {% elif rep.categoria == 'Baches' %}🚧
+                    {% elif rep.categoria == 'Fugas de Agua' %}💧
+                    {% elif rep.categoria == 'Alumbrado' %}💡
+                    {% elif rep.categoria == 'Inundaciones' %}🌊
+                    {% else %}📌{% endif %}
+                    {{ rep.categoria }}
+                  </span>
+                </td>
+                <td class="font-medium">{{ rep.distrito }}</td>
+                <td><span class="badge-zona">{{ rep.zona }}</span></td>
+                <td style="max-width: 380px;">{{ rep.descripcion }}</td>
+                <td>
+                  <span class="badge-estado estado-{{ rep.estado|lower|replace(' ', '-') }}">
+                    {% if rep.estado == 'Pendiente' %}⏳
+                    {% elif rep.estado == 'En atención' %}🔵
+                    {% elif rep.estado == 'Resuelto' %}✅
+                    {% endif %}
+                    {{ rep.estado }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <a href="{{ url_for('detalle', id=rep.id) }}" class="btn-detalle">
+                    Ver Ticket →
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h4>{{ cliente }}</h4>
+        <p>Prototipo Académico Funcional · EST315</p>
+        <p class="footer-text">Plataforma ciudadana para el registro y fiscalización transparente de obras y reparaciones locales.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Equipo del Proyecto</h4>
+        <ul class="team-list">
+          <li><strong>PM:</strong> {{ equipo.pm }}</li>
+          <li><strong>Análisis de Datos:</strong> {{ equipo.datos }}</li>
+          <li><strong>Arquitectura IA:</strong> {{ equipo.ia }}</li>
+          <li><strong>Comunicaciones:</strong> {{ equipo.comunicaciones }}</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Acceso para Funcionarios</h4>
+        <p class="rules-summary">
+          Si formas parte del personal municipal o del comité evaluador de TICs, puedes ingresar al panel analítico con el ranking de IA.
+        </p>
+        <p style="margin-top: 0.75rem;">
+          <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm" style="color: #ffffff; border-color: #475569;">
+            🔐 Iniciar Sesión en Panel de IA
+          </a>
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; {{ anio_actual }} {{ cliente }} · Todos los derechos reservados · Prototipo académico.</p>
+    </div>
+  </footer>
+
+  <script>
+    function consultarTicket() {
+      const idInput = document.getElementById('inputBuscarTicket').value.trim();
+      if (!idInput) {
+        alert("Por favor ingrese el número de ticket.");
+        return;
+      }
+      window.location.href = `/detalle/${idInput}`;
+    }
+
+    // Filtro en vivo para la tabla ciudadana
+    document.getElementById('filtroTextoCiudadano')?.addEventListener('input', function(e) {
+      const term = e.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#tablaCiudadana tbody tr');
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

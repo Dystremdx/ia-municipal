@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Incidencia Vecinal · {{ cliente }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="{% if es_admin %}body-admin{% else %}body-ciudadano{% endif %}">
+
+  <!-- Barra de Navegación Superior -->
+  <header class="navbar {% if es_admin %}navbar-admin{% else %}navbar-ciudadano{% endif %}">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <a href="{% if es_admin %}{{ url_for('panel_admin') }}{% else %}{{ url_for('portal_ciudadano') }}{% endif %}" class="nav-brand-link">
+          <div class="brand-icon">🏛️</div>
+          <div>
+            <h1 class="brand-title">{{ cliente }}</h1>
+            <span class="brand-subtitle">{% if es_admin %}Panel de Administración Municipal{% else %}Portal de Atención al Vecino{% endif %}</span>
+          </div>
+        </a>
+      </div>
+      <div class="nav-meta">
+        {% if es_admin %}
+          <a href="{{ url_for('panel_admin') }}" class="btn btn-outline btn-sm">← Volver al Panel de IA</a>
+        {% else %}
+          <a href="{{ url_for('portal_ciudadano') }}" class="btn btn-outline btn-sm">← Volver al Portal Ciudadano</a>
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">🔐 Acceso Admin</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Navegación de migas de pan -->
+    <div class="breadcrumb">
+      {% if es_admin %}
+        <a href="{{ url_for('panel_admin') }}">Panel de IA</a>
+      {% else %}
+        <a href="{{ url_for('portal_ciudadano') }}">Portal Ciudadano</a>
+      {% endif %}
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Nuevo Reporte</span>
+    </div>
+
+    <div class="form-container-card">
+
+      <div class="form-header">
+        <div class="form-header-icon">📢</div>
+        <div>
+          <h2 class="form-title">Reportar Incidencia Municipal</h2>
+          <p class="form-subtitle">
+            Al registrar tu reporte, el <strong>Motor de IA Municipal</strong> evaluará la urgencia, 
+            detectará coincidencias zonales y asignará una prioridad para el despacho de cuadrillas.
+          </p>
+        </div>
+      </div>
+
+      <form action="{{ url_for('registro') }}" method="POST" id="formRegistroReporte" class="form-body">
+
+        <!-- Fila 1: Categoría y Distrito -->
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="categoria" class="form-label">Categoría del Problema <span class="req">*</span></label>
+            <select name="categoria" id="categoria" class="form-control" required>
+              <option value="" disabled selected>Seleccione una categoría...</option>
+              <option value="Basura">🗑️ Basura y Residuos Sólidos</option>
+              <option value="Baches">🚧 Baches y Pistas Dañadas</option>
+              <option value="Fugas de Agua">💧 Fugas de Agua Potable</option>
+              <option value="Alumbrado">💡 Alumbrado Público y Luminarias</option>
+              <option value="Inundaciones">🌊 Inundaciones y Drenaje Pluvial</option>
+              <option value="Otros">📌 Otros Problemas Municipales</option>
+            </select>
+          </div>
+
+          <div class="form-group col-half">
+            <label for="distrito" class="form-label">Distrito Municipal <span class="req">*</span></label>
+            <select name="distrito" id="distrito" class="form-control" required>
+              <option value="" disabled selected>Seleccione un distrito...</option>
+              <option value="Puno">Puno</option>
+              <option value="Juliaca">Juliaca</option>
+              <option value="Yunguyo">Yunguyo</option>
+              <option value="Ilave">Ilave</option>
+              <option value="Chucuito">Chucuito</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 2: Zona y Recursos Requeridos -->
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="zona" class="form-label">Zona Geográfica <span class="req">*</span></label>
+            <select name="zona" id="zona" class="form-control" required>
+              <option value="" disabled selected>Seleccione la zona...</option>
+              <option value="Norte">Norte</option>
+              <option value="Sur">Sur</option>
+              <option value="Este">Este</option>
+              <option value="Oeste">Oeste</option>
+              <option value="Centro">Centro</option>
+            </select>
+          </div>
+
+          <div class="form-group col-half">
+            <label for="recursos_requeridos" class="form-label">Recursos Estimados para Solución <span class="req">*</span></label>
+            <select name="recursos_requeridos" id="recursos_requeridos" class="form-control" required>
+              <option value="Bajo">🟢 Bajo (Herramientas básicas, resolución rápida - Quick Win)</option>
+              <option value="Medio" selected>🟡 Medio (Cuadrilla estándar y materiales)</option>
+              <option value="Alto">🔴 Alto (Maquinaria pesada o intervención mayor)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 3: Descripción Detallada -->
+        <div class="form-group">
+          <label for="descripcion" class="form-label">Descripción Detallada y Ubicación Exacta <span class="req">*</span></label>
+          <textarea name="descripcion" id="descripcion" rows="3" class="form-control"
+                    placeholder="Indique avenidas, jirones, puntos de referencia y detalles del peligro observable..." required minlength="10"></textarea>
+          <small class="form-help">Ejemplo: Cruce de Jr. Los Incas con Av. El Sol, bache profundo que obliga a invadir carril.</small>
+        </div>
+
+        <!-- Fila 4: Gravedad, Población Afectada y Tiempo sin Resolver -->
+        <div class="form-row">
+          <div class="form-group col-third">
+            <label for="gravedad" class="form-label">Nivel de Gravedad (1 a 5) <span class="req">*</span></label>
+            <select name="gravedad" id="gravedad" class="form-control" required>
+              <option value="1">1 - Leve (Incomodidad menor)</option>
+              <option value="2">2 - Moderado bajo</option>
+              <option value="3" selected>3 - Medio (Impacto vecinal estándar)</option>
+              <option value="4">4 - Alto (Riesgo para vehículos o peatones)</option>
+              <option value="5">5 - Crítico (Emergencia inminente / Peligro grave)</option>
+            </select>
+          </div>
+
+          <div class="form-group col-third">
+            <label for="poblacion_afectada" class="form-label">Vecinos Afectados Aprox. <span class="req">*</span></label>
+            <input type="number" name="poblacion_afectada" id="poblacion_afectada" class="form-control"
+                   min="10" max="5000" value="500" required placeholder="Ej: 500">
+            <small class="form-help">Población estimada (10 a 5,000).</small>
+          </div>
+
+          <div class="form-group col-third">
+            <label for="tiempo_sin_resolver" class="form-label">Días con el Problema <span class="req">*</span></label>
+            <input type="number" name="tiempo_sin_resolver" id="tiempo_sin_resolver" class="form-control"
+                   min="1" max="60" value="5" required placeholder="Ej: 5">
+            <small class="form-help">Días sin solución (1 a 60).</small>
+          </div>
+        </div>
+
+        {% if es_admin %}
+          <!-- Fila Extra solo para el Administrador -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="estado" class="form-label">Estado Inicial (Admin):</label>
+              <select name="estado" id="estado" class="form-control">
+                <option value="Pendiente" selected>🟡 Pendiente</option>
+                <option value="En atención">🔵 En atención</option>
+                <option value="Resuelto">🟢 Resuelto</option>
+              </select>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Botones de Acción -->
+        <div class="form-actions">
+          <a href="{% if es_admin %}{{ url_for('panel_admin') }}{% else %}{{ url_for('portal_ciudadano') }}{% endif %}" class="btn btn-secondary">
+            Cancelar y Volver
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg" id="btnSubmitRegistro">
+            <span>📢</span> Enviar Reporte Ciudadano
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </main>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h4>{{ cliente }}</h4>
+        <p>Prototipo Académico Funcional · EST315</p>
+      </div>
+      <div class="footer-col">
+        <h4>Equipo del Proyecto</h4>
+        <ul class="team-list">
+          <li><strong>PM:</strong> {{ equipo.pm }}</li>
+          <li><strong>Datos:</strong> {{ equipo.datos }} · <strong>IA:</strong> {{ equipo.ia }} · <strong>Comunicaciones:</strong> {{ equipo.comunicaciones }}</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; {{ anio_actual }} {{ cliente }} · Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

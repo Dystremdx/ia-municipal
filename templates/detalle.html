@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket #{{ reporte.id }} · IA Municipal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="{% if es_admin %}body-admin{% else %}body-ciudadano{% endif %}">
+
+  <!-- Barra de Navegación Superior -->
+  <header class="navbar {% if es_admin %}navbar-admin{% else %}navbar-ciudadano{% endif %}">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <a href="{% if es_admin %}{{ url_for('panel_admin') }}{% else %}{{ url_for('portal_ciudadano') }}{% endif %}" class="nav-brand-link">
+          <div class="brand-icon">🏛️</div>
+          <div>
+            <h1 class="brand-title">{{ cliente }}</h1>
+            <span class="brand-subtitle">{% if es_admin %}Panel de Cuadrillas y Despacho{% else %}Seguimiento de Ticket Vecinal{% endif %}</span>
+          </div>
+        </a>
+      </div>
+      <div class="nav-meta">
+        {% if es_admin %}
+          <a href="{{ url_for('panel_admin') }}" class="btn btn-outline btn-sm">← Volver al Panel de IA</a>
+        {% else %}
+          <a href="{{ url_for('portal_ciudadano') }}" class="btn btn-outline btn-sm">← Volver al Portal Ciudadano</a>
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">🔐 Acceso Admin</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Notificaciones Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-alert flash-{{ category }}">
+              <span class="flash-icon">🔔</span>
+              <span>{{ message }}</span>
+              <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Navegación de migas de pan (Breadcrumb) -->
+    <div class="breadcrumb">
+      {% if es_admin %}
+        <a href="{{ url_for('panel_admin') }}">Panel de IA</a>
+      {% else %}
+        <a href="{{ url_for('portal_ciudadano') }}">Portal Ciudadano</a>
+      {% endif %}
+      <span class="breadcrumb-separator">/</span>
+      <span>Reportes</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Ticket #{{ reporte.id }}</span>
+    </div>
+
+    <!-- Encabezado de la Ficha -->
+    <div class="detail-header-card">
+      <div class="detail-title-group">
+        <div class="detail-badge-group">
+          <span class="badge-categoria cat-{{ reporte.categoria|lower|replace(' ', '-') }}">
+            {% if reporte.categoria == 'Basura' %}🗑️
+            {% elif reporte.categoria == 'Baches' %}🚧
+            {% elif reporte.categoria == 'Fugas de Agua' %}💧
+            {% elif reporte.categoria == 'Alumbrado' %}💡
+            {% elif reporte.categoria == 'Inundaciones' %}🌊
+            {% else %}📌{% endif %}
+            {{ reporte.categoria }}
+          </span>
+          <span class="badge-estado estado-{{ reporte.estado|lower|replace(' ', '-') }}">
+            {{ reporte.estado }}
+          </span>
+          <span class="badge-zona">Zona {{ reporte.zona }} · {{ reporte.distrito }}</span>
+        </div>
+        <h2 class="detail-main-title">Reporte de Incidencia #{{ reporte.id }}</h2>
+        <p class="detail-main-desc">{{ reporte.descripcion }}</p>
+
+        <!-- Barra de Línea de Tiempo Ciudadana -->
+        <div class="timeline-container">
+          <div class="timeline-step {% if reporte.estado in ['Pendiente', 'En atención', 'Resuelto'] %}step-completed{% endif %}">
+            <div class="step-circle">1</div>
+            <div class="step-label">Registrado ({{ reporte.fecha_reporte }})</div>
+          </div>
+          <div class="timeline-line {% if reporte.estado in ['En atención', 'Resuelto'] %}line-active{% endif %}"></div>
+          <div class="timeline-step {% if reporte.estado in ['En atención', 'Resuelto'] %}step-completed{% elif reporte.estado == 'Pendiente' %}step-current{% endif %}">
+            <div class="step-circle">2</div>
+            <div class="step-label">Priorizado por IA</div>
+          </div>
+          <div class="timeline-line {% if reporte.estado == 'Resuelto' %}line-active{% endif %}"></div>
+          <div class="timeline-step {% if reporte.estado == 'Resuelto' %}step-completed{% elif reporte.estado == 'En atención' %}step-current{% endif %}">
+            <div class="step-circle">3</div>
+            <div class="step-label">Cuadrilla en Campo</div>
+          </div>
+          <div class="timeline-line {% if reporte.estado == 'Resuelto' %}line-active{% endif %}"></div>
+          <div class="timeline-step {% if reporte.estado == 'Resuelto' %}step-completed{% endif %}">
+            <div class="step-circle">4</div>
+            <div class="step-label">Solucionado</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="score-card-hero semaforo-card-{{ reporte.clasificacion|lower }}">
+        <div class="score-hero-label">Prioridad IA Asignada</div>
+        <div class="score-hero-badge semaforo-{{ reporte.clasificacion|lower }}">
+          {{ reporte.clasificacion }}
+        </div>
+        <div class="score-hero-points">
+          <span class="score-hero-number">{{ reporte.puntaje }}</span>
+          <span class="score-hero-max">/ 100 pts</span>
+        </div>
+        <div class="score-hero-rank">Posición #{{ reporte.ranking_posicion }} en la cola municipal</div>
+      </div>
+    </div>
+
+    <!-- Si es Administrador: Panel Operativo para Cambiar Estado en Vivo -->
+    {% if es_admin %}
+      <div class="admin-control-box">
+        <div class="admin-control-title">
+          <span>🛠️ Control Operativo de Cuadrilla (Exclusivo Administrador):</span>
+        </div>
+        <form action="{{ url_for('cambiar_estado', id=reporte.id) }}" method="POST" class="admin-state-form">
+          <label for="nuevo_estado" style="font-weight: 600; font-size: 0.88rem;">Actualizar Estado:</label>
+          <select name="nuevo_estado" id="nuevo_estado" class="filter-select" style="max-width: 200px;">
+            <option value="Pendiente" {% if reporte.estado == 'Pendiente' %}selected{% endif %}>🟡 Pendiente</option>
+            <option value="En atención" {% if reporte.estado == 'En atención' %}selected{% endif %}>🔵 En atención</option>
+            <option value="Resuelto" {% if reporte.estado == 'Resuelto' %}selected{% endif %}>🟢 Resuelto</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">Guardar y Re-evaluar IA</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Grid de Dos Columnas: Explicación IA y Desglose de Factores -->
+    <div class="detail-grid">
+
+      <!-- Columna Izquierda: Explicación IA y Reglas de Negocio -->
+      <div class="detail-left-col">
+
+        <!-- Tarjeta de Explicación del Motor de IA -->
+        <div class="card detail-section-card">
+          <div class="card-title-bar">
+            <span class="card-icon">🤖</span>
+            <h3>Dictamen y Explicación del Motor IA</h3>
+          </div>
+          <div class="ia-explanation-box">
+            <p class="ia-explanation-text">{{ reporte.explicacion }}</p>
+          </div>
+          <div class="ia-meta-info">
+            <small>Evaluación algorítmica multicriterio transparente (Gravedad 35%, Población 30%, Tiempo 20%, Recursos 15%).</small>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Reglas de Negocio Activadas (RN-01 a RN-08) -->
+        <div class="card detail-section-card">
+          <div class="card-title-bar">
+            <span class="card-icon">⚖️</span>
+            <h3>Reglas de Negocio Aplicadas</h3>
+          </div>
+          <div class="rules-list">
+            {% if reporte.reglas_aplicadas %}
+              {% for regla in reporte.reglas_aplicadas %}
+                <div class="rule-item">
+                  <div class="rule-badge-col">
+                    <span class="rule-code-badge">{{ regla.codigo }}</span>
+                    <span class="rule-impact-badge">{{ regla.impacto }}</span>
+                  </div>
+                  <div class="rule-text-col">
+                    <h4 class="rule-name">{{ regla.nombre }}</h4>
+                    <p class="rule-detail">{{ regla.detalle }}</p>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted">No se aplicaron reglas extraordinarias adicionales para este caso.</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Columna Derecha: Desglose de Factores y Ficha Técnica -->
+      <div class="detail-right-col">
+
+        <!-- Desglose Multicriterio de los 4 Factores -->
+        <div class="card detail-section-card">
+          <div class="card-title-bar">
+            <span class="card-icon">📐</span>
+            <h3>Desglose Ponderado de Factores</h3>
+          </div>
+
+          <div class="factor-progress-group">
+            <div class="factor-item">
+              <div class="factor-header">
+                <span class="factor-name">1. Gravedad del Incidente (35%)</span>
+                <span class="factor-score">{{ reporte.desglose_ponderado.gravedad_pts }} / 35.0 pts</span>
+              </div>
+              <div class="factor-bar-bg">
+                <div class="factor-bar-fill fill-gravedad" style="width: {{ (reporte.desglose_ponderado.gravedad_pts / 35.0) * 100 }}%;"></div>
+              </div>
+              <div class="factor-subtext">Nivel reportado: {{ reporte.gravedad }}/5 estrellas (Normalizado: {{ reporte.norm_gravedad }}/100)</div>
+            </div>
+
+            <div class="factor-item">
+              <div class="factor-header">
+                <span class="factor-name">2. Población Afectada (30%)</span>
+                <span class="factor-score">{{ reporte.desglose_ponderado.poblacion_pts }} / 30.0 pts</span>
+              </div>
+              <div class="factor-bar-bg">
+                <div class="factor-bar-fill fill-poblacion" style="width: {{ (reporte.desglose_ponderado.poblacion_pts / 30.0) * 100 }}%;"></div>
+              </div>
+              <div class="factor-subtext">Impacto estimado: {{ "{:,}".format(reporte.poblacion_afectada) }} personas (Normalizado: {{ reporte.norm_poblacion }}/100)</div>
+            </div>
+
+            <div class="factor-item">
+              <div class="factor-header">
+                <span class="factor-name">3. Tiempo sin Resolver (20%)</span>
+                <span class="factor-score">{{ reporte.desglose_ponderado.tiempo_pts }} / 20.0 pts</span>
+              </div>
+              <div class="factor-bar-bg">
+                <div class="factor-bar-fill fill-tiempo" style="width: {{ (reporte.desglose_ponderado.tiempo_pts / 20.0) * 100 }}%;"></div>
+              </div>
+              <div class="factor-subtext">Demora acumulada: {{ reporte.tiempo_sin_resolver }} días de espera (Normalizado: {{ reporte.norm_tiempo }}/100)</div>
+            </div>
+
+            <div class="factor-item">
+              <div class="factor-header">
+                <span class="factor-name">4. Recursos Requeridos (15%)</span>
+                <span class="factor-score">{{ reporte.desglose_ponderado.recursos_pts }} / 15.0 pts</span>
+              </div>
+              <div class="factor-bar-bg">
+                <div class="factor-bar-fill fill-recursos" style="width: {{ (reporte.desglose_ponderado.recursos_pts / 15.0) * 100 }}%;"></div>
+              </div>
+              <div class="factor-subtext">Nivel de recurso: '{{ reporte.recursos_requeridos }}' (Normalizado: {{ reporte.norm_recursos }}/100)</div>
+            </div>
+          </div>
+
+          <div class="base-score-summary">
+            <span>Puntaje Base Ponderado:</span>
+            <strong>{{ reporte.puntaje_base }} pts</strong>
+          </div>
+        </div>
+
+        <!-- Ficha Técnica de Registro -->
+        <div class="card detail-section-card">
+          <div class="card-title-bar">
+            <span class="card-icon">📋</span>
+            <h3>Ficha Técnica del Reporte</h3>
+          </div>
+          <div class="tech-table">
+            <div class="tech-row">
+              <span class="tech-label">Número de Ticket:</span>
+              <span class="tech-val">#{{ reporte.id }}</span>
+            </div>
+            <div class="tech-row">
+              <span class="tech-label">Fecha de Ingreso:</span>
+              <span class="tech-val">{{ reporte.fecha_reporte }}</span>
+            </div>
+            <div class="tech-row">
+              <span class="tech-label">Distrito Municipal:</span>
+              <span class="tech-val">{{ reporte.distrito }}</span>
+            </div>
+            <div class="tech-row">
+              <span class="tech-label">Zona Geográfica:</span>
+              <span class="tech-val">{{ reporte.zona }}</span>
+            </div>
+            <div class="tech-row">
+              <span class="tech-label">Estado de Atención:</span>
+              <span class="tech-val"><span class="badge-estado estado-{{ reporte.estado|lower|replace(' ', '-') }}">{{ reporte.estado }}</span></span>
+            </div>
+            <div class="tech-row">
+              <span class="tech-label">Recursos Asignados:</span>
+              <span class="tech-val">{{ reporte.recursos_requeridos }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Botones de Acción Inferiores -->
+    <div class="detail-actions-footer">
+      {% if es_admin %}
+        <a href="{{ url_for('panel_admin') }}" class="btn btn-secondary">← Volver al Panel de IA</a>
+        <a href="{{ url_for('exportar_pdf') }}" class="btn btn-outline" target="_blank">📄 Exportar Todo el Ranking (PDF)</a>
+      {% else %}
+        <a href="{{ url_for('portal_ciudadano') }}" class="btn btn-secondary">← Volver al Portal Ciudadano</a>
+        <a href="{{ url_for('registro') }}" class="btn btn-primary">➕ Reportar Otra Incidencia</a>
+      {% endif %}
+    </div>
+
+  </main>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h4>{{ cliente }}</h4>
+        <p>Prototipo Académico Funcional · EST315</p>
+      </div>
+      <div class="footer-col">
+        <h4>Equipo del Proyecto</h4>
+        <ul class="team-list">
+          <li><strong>PM:</strong> {{ equipo.pm }}</li>
+          <li><strong>Datos:</strong> {{ equipo.datos }} · <strong>IA:</strong> {{ equipo.ia }} · <strong>Comunicaciones:</strong> {{ equipo.comunicaciones }}</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; {{ anio_actual }} {{ cliente }} · Sistema de Gestión de Proyectos TICs.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

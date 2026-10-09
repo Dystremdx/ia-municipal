@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso de Funcionarios · IA Municipal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="body-login">
+
+  <div class="login-wrapper">
+
+    <div class="login-card">
+
+      <div class="login-header">
+        <div class="login-icon">🏛️</div>
+        <h2 class="login-title">{{ cliente }}</h2>
+        <span class="login-subtitle">Sistema de Priorización Inteligente con IA (EST315)</span>
+      </div>
+
+      <!-- Notificaciones Flash -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash-alert flash-{{ category }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Cuadro de Credenciales de Prueba (Para el Profesor y Evaluadores) -->
+      <div class="demo-credentials-box">
+        <div class="demo-badge">🎓 Credenciales Académicas de Evaluación</div>
+        <div class="demo-info">
+          <span>Usuario: <strong>{{ admin_user }}</strong></span>
+          <span>Contraseña: <strong>{{ admin_pass }}</strong></span>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm btn-autofill" onclick="autoRellenar()">
+          ⚡ Rellenar Automáticamente y Acceder
+        </button>
+      </div>
+
+      <form action="{{ url_for('login') }}" method="POST" id="formLogin" class="login-form">
+        <div class="form-group">
+          <label for="usuario" class="form-label">Usuario Municipal:</label>
+          <input type="text" name="usuario" id="usuario" class="form-control" placeholder="Ingrese su usuario..." required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Contraseña:</label>
+          <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+          <span>🔐</span> Iniciar Sesión en Panel de IA
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <a href="{{ url_for('portal_ciudadano') }}" class="btn-link">← Volver al Portal Ciudadano</a>
+      </div>
+
+    </div>
+
+    <div class="login-meta-text">
+      Prototipo desarrollado para el curso <strong>Gestión de Proyectos TICs (EST315)</strong><br>
+      PM: Cristian Ronaldo | Ronald Wilder | Yair Dilan | Choucha
+    </div>
+
+  </div>
+
+  <script>
+    function autoRellenar() {
+      document.getElementById('usuario').value = "{{ admin_user }}";
+      document.getElementById('password').value = "{{ admin_pass }}";
+      document.getElementById('formLogin').submit();
+    }
+  </script>
+
+</body>
+</html>
